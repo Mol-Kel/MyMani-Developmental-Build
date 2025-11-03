@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Notes from "./pages/Notes";
 import ManageCategories from "./pages/ManageCategories";
+import ImportStatement from "./pages/ImportStatement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/manage-categories" element={<ManageCategories />} />
+            <Route path="/import-statement" element={<ImportStatement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

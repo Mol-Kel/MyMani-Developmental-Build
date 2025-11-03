@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, TrendingDown, TrendingUp, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, TrendingDown, TrendingUp, Image as ImageIcon, RefreshCw, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,14 +63,25 @@ const Transactions = () => {
               </Button>
               <h1 className="text-xl font-bold">Transactions</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/add-transaction')}
-              className="text-primary-foreground hover:bg-white/20"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/import-statement')}
+                className="text-primary-foreground hover:bg-white/20"
+                title="Import bank statement"
+              >
+                <Upload className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/add-transaction')}
+                className="text-primary-foreground hover:bg-white/20"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
