@@ -1,20 +1,18 @@
+import { userStorage } from './storage';
+import { getCurrencySymbol } from './currency';
+
 // Format amount in cents to currency string
-export const formatCurrency = (amountInCents: number, currency: string = 'ZAR'): string => {
+export const formatCurrency = (amountInCents: number): string => {
+  const currency = userStorage.getCurrency();
   const amount = amountInCents / 100;
+  const symbol = getCurrencySymbol(currency);
   
-  const currencySymbols: Record<string, string> = {
-    ZAR: 'R',
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-  };
+  // Handle special formatting for different currencies
+  if (currency === 'EUR') {
+    return `${amount.toFixed(2)}${symbol}`;
+  }
   
-  const symbol = currencySymbols[currency] || currency;
-  
-  return `${symbol}${amount.toLocaleString('en-ZA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return `${symbol}${amount.toFixed(2)}`;
 };
 
 // Format date to readable string

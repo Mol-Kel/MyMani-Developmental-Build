@@ -1,22 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun, BookOpen, Tag, Download } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, BookOpen, Tag, Download, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { userStorage, transactionStorage, budgetStorage, goalStorage } from '@/lib/storage';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { exportTransactionsToCSV, exportBudgetsToCSV, exportGoalsToCSV, exportAllData } from '@/lib/export';
+import { SUPPORTED_CURRENCIES } from '@/lib/currency';
+import { getAlertSettings, setAlertSettings } from '@/hooks/useBudgetAlerts';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [userName, setUserName] = useState('');
+  const [currency, setCurrency] = useState('ZAR');
+  const [alertSettings, setAlertSettingsState] = useState(getAlertSettings());
 
   useEffect(() => {
     setUserName(userStorage.getName());
+    setCurrency(userStorage.getCurrency());
   }, []);
 
   const handleSaveName = () => {
@@ -24,6 +32,37 @@ const Settings = () => {
       userStorage.setName(userName.trim());
       toast.success('Name updated successfully');
     }
+  };
+
+  const handleCurrencyChange = (value: string) => {
+    setCurrency(value);
+    userStorage.setCurrency(value);
+    toast.success('Currency updated successfully');
+  };
+
+  const handleAlertToggle = (enabled: boolean) => {
+    const newSettings = { ...alertSettings, enabled };
+    setAlertSettingsState(newSettings);
+    setAlertSettings(newSettings);
+    toast.success(enabled ? 'Budget alerts enabled' : 'Budget alerts disabled');
+  };
+
+  const handleWarningThresholdChange = (value: number[]) => {
+    const newSettings = {
+      ...alertSettings,
+      thresholds: { ...alertSettings.thresholds, warning: value[0] },
+    };
+    setAlertSettingsState(newSettings);
+    setAlertSettings(newSettings);
+  };
+
+  const handleCriticalThresholdChange = (value: number[]) => {
+    const newSettings = {
+      ...alertSettings,
+      thresholds: { ...alertSettings.thresholds, critical: value[0] },
+    };
+    setAlertSettingsState(newSettings);
+    setAlertSettings(newSettings);
   };
 
   const handleExportTransactions = () => {
@@ -106,6 +145,85 @@ const Settings = () => {
                 <Button onClick={handleSaveName}>Save</Button>
               </div>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="currency">Preferred Currency</Label>
+              <Select value={currency} onValueChange={handleCurrencyChange}>
+                <SelectTrigger id="currency">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((curr) => (
+                    <SelectItem key={curr.code} value={curr.code}>
+                      {curr.symbol} - {curr.name} ({curr.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                All amounts will be displayed in this currency
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle>Budget Alerts</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Enable Alerts</Label>
+                <p className="text-sm text-muted-foreground">
+                  Get notified when you're close to budget limits
+                </p>
+              </div>
+              <Switch
+                checked={alertSettings.enabled}
+                onCheckedChange={handleAlertToggle}
+              />
+            </div>
+
+            {alertSettings.enabled && (
+              <>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Warning Threshold</Label>
+                    <span className="text-sm font-medium">{alertSettings.thresholds.warning}%</span>
+                  </div>
+                  <Slider
+                    value={[alertSettings.thresholds.warning]}
+                    onValueChange={handleWarningThresholdChange}
+                    min={50}
+                    max={95}
+                    step={5}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Alert when spending reaches this percentage
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Critical Threshold</Label>
+                    <span className="text-sm font-medium">{alertSettings.thresholds.critical}%</span>
+                  </div>
+                  <Slider
+                    value={[alertSettings.thresholds.critical]}
+                    onValueChange={handleCriticalThresholdChange}
+                    min={80}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Critical alert when spending reaches this percentage
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

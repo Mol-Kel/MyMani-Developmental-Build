@@ -22,6 +22,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { formatCurrency, getGreeting } from '@/lib/formatters';
 import { transactionStorage, budgetStorage, goalStorage, userStorage } from '@/lib/storage';
 import { useTheme } from 'next-themes';
+import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,6 +31,9 @@ const Dashboard = () => {
   const [dailySpent, setDailySpent] = useState(0);
   const [balance, setBalance] = useState(0);
   const [savingsProgress, setSavingsProgress] = useState(0);
+  
+  // Enable budget alerts
+  useBudgetAlerts();
 
   useEffect(() => {
     // Load user name
