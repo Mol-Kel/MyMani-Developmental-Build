@@ -27,7 +27,7 @@ All colors MUST be HSL.
     --muted: 0 0% 92%;
     --muted-foreground: 111 16% 45%;
 
-    --accent: 267 30% 44%;
+    --accent: 1 66% 52%;
     --accent-foreground: 0 0% 100%;
 
     --success: 92 55% 39%;
@@ -47,7 +47,7 @@ All colors MUST be HSL.
 
     --gradient-primary: linear-gradient(135deg, hsl(92 55% 39%), hsl(92 55% 49%));
     --gradient-success: linear-gradient(135deg, hsl(92 55% 39%), hsl(92 55% 49%));
-    --gradient-accent: linear-gradient(135deg, hsl(267 30% 44%), hsl(267 30% 54%));
+    --gradient-accent: linear-gradient(135deg, hsl(1 66% 52%), hsl(1 66% 62%));
     --gradient-destructive: linear-gradient(135deg, hsl(1 66% 52%), hsl(1 66% 62%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 99%));
     
@@ -55,7 +55,7 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 6px -1px hsl(111 16% 24% / 0.08), 0 2px 4px -1px hsl(111 16% 24% / 0.04);
     --shadow-lg: 0 10px 15px -3px hsl(111 16% 24% / 0.1), 0 4px 6px -2px hsl(111 16% 24% / 0.05);
     --shadow-glow: 0 0 20px hsl(92 55% 49% / 0.3);
-    --shadow-accent: 0 0 20px hsl(267 30% 54% / 0.3);
+    --shadow-accent: 0 0 20px hsl(1 66% 62% / 0.3);
     --shadow-destructive: 0 0 20px hsl(1 66% 62% / 0.3);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,7 +81,7 @@ All colors MUST be HSL.
     --muted: 111 16% 18%;
     --muted-foreground: 0 0% 70%;
 
-    --accent: 267 30% 50%;
+    --accent: 1 66% 52%;
     --accent-foreground: 0 0% 100%;
 
     --success: 92 55% 45%;
@@ -99,7 +99,7 @@ All colors MUST be HSL.
 
     --gradient-primary: linear-gradient(135deg, hsl(92 55% 40%), hsl(92 55% 50%));
     --gradient-success: linear-gradient(135deg, hsl(92 55% 40%), hsl(92 55% 50%));
-    --gradient-accent: linear-gradient(135deg, hsl(267 30% 45%), hsl(267 30% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(1 66% 52%), hsl(1 66% 62%));
     --gradient-destructive: linear-gradient(135deg, hsl(1 66% 52%), hsl(1 66% 62%));
     --gradient-card: linear-gradient(145deg, hsl(111 16% 16%), hsl(111 16% 18%));
     
@@ -107,7 +107,7 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -1px hsl(0 0% 0% / 0.3);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -2px hsl(0 0% 0% / 0.4);
     --shadow-glow: 0 0 20px hsl(92 55% 50% / 0.4);
-    --shadow-accent: 0 0 20px hsl(267 30% 55% / 0.4);
+    --shadow-accent: 0 0 20px hsl(1 66% 62% / 0.4);
     --shadow-destructive: 0 0 20px hsl(1 66% 62% / 0.4);
   }
 }
