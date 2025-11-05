@@ -61,7 +61,6 @@ export default {
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-success': 'var(--gradient-success)',
         'gradient-accent': 'var(--gradient-accent)',
-        'gradient-destructive': 'var(--gradient-destructive)',
         'gradient-card': 'var(--gradient-card)',
       },
       boxShadow: {
@@ -69,8 +68,6 @@ export default {
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'glow': 'var(--shadow-glow)',
-        'accent': 'var(--shadow-accent)',
-        'destructive': 'var(--shadow-destructive)',
       },
       borderRadius: {
         lg: "var(--radius)",
