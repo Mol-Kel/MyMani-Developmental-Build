@@ -19,6 +19,7 @@ import { DashboardCard } from '@/components/DashboardCard';
 import { CategoryChip } from '@/components/CategoryChip';
 import { StatCard } from '@/components/StatCard';
 import { ProgressBar } from '@/components/ProgressBar';
+import { StreakCounter } from '@/components/StreakCounter';
 import { formatCurrency, getGreeting } from '@/lib/formatters';
 import { transactionStorage, budgetStorage, goalStorage, userStorage } from '@/lib/storage';
 import { useTheme } from 'next-themes';
@@ -104,6 +105,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <StreakCounter />
               <Button
                 variant="ghost"
                 size="icon"
@@ -218,7 +220,12 @@ const Dashboard = () => {
             <ProgressBar value={savingsProgress} variant="success" />
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">
-                Keep going! You're making great progress.
+                {savingsProgress === 0 && "Start saving today! Every little bit counts."}
+                {savingsProgress > 0 && savingsProgress < 25 && "Great start! Keep the momentum going! 💪"}
+                {savingsProgress >= 25 && savingsProgress < 50 && "You're making solid progress! 🌟"}
+                {savingsProgress >= 50 && savingsProgress < 75 && "More than halfway there! Keep pushing! 🚀"}
+                {savingsProgress >= 75 && savingsProgress < 100 && "Almost there! You're doing amazing! 🎯"}
+                {savingsProgress >= 100 && "Goals achieved! You're a savings superstar! 🎉"}
               </span>
               <Button variant="link" onClick={() => navigate('/goals')}>
                 View Goals

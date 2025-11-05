@@ -22,7 +22,6 @@ export const COLOR_PRESETS: ColorPreset[] = [
 
 export interface ColorThemeSettings {
   primary: string;
-  secondary: string;
   accent: string;
 }
 
@@ -30,7 +29,6 @@ const STORAGE_KEY = 'mymani_color_theme';
 
 const DEFAULT_THEME: ColorThemeSettings = {
   primary: '92 55% 39%',
-  secondary: '111 16% 24%',
   accent: '1 66% 52%',
 };
 
@@ -49,10 +47,6 @@ export const useColorTheme = () => {
     root.style.setProperty('--ring', theme.primary);
     root.style.setProperty('--success', theme.primary);
     root.style.setProperty('--success-foreground', '0 0% 100%');
-    
-    // Apply secondary color
-    root.style.setProperty('--secondary', theme.secondary);
-    root.style.setProperty('--secondary-foreground', '0 0% 96%');
     
     // Apply accent color
     root.style.setProperty('--accent', theme.accent);

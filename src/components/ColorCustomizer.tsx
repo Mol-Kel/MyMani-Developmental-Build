@@ -65,11 +65,10 @@ export const ColorCustomizer = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground">
-          Choose three colors to personalize your dashboard
+          Choose two colors to personalize your dashboard
         </p>
         
         <ColorPicker role="primary" label="Primary Color (Main theme)" />
-        <ColorPicker role="secondary" label="Secondary Color (Backgrounds)" />
         <ColorPicker role="accent" label="Accent Color (Highlights)" />
 
         <div className="flex gap-3 pt-4">
