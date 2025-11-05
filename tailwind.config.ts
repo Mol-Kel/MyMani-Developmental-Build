@@ -61,6 +61,8 @@ export default {
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-success': 'var(--gradient-success)',
         'gradient-accent': 'var(--gradient-accent)',
+        'gradient-warning': 'var(--gradient-warning)',
+        'gradient-destructive': 'var(--gradient-destructive)',
         'gradient-card': 'var(--gradient-card)',
       },
       boxShadow: {
