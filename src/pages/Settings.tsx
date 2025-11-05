@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { exportTransactionsToCSV, exportBudgetsToCSV, exportGoalsToCSV, exportAllData } from '@/lib/export';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 import { getAlertSettings, setAlertSettings } from '@/hooks/useBudgetAlerts';
+import { ColorCustomizer } from '@/components/ColorCustomizer';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -255,6 +256,8 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        <ColorCustomizer />
 
         <Card className="shadow-md">
           <CardHeader>

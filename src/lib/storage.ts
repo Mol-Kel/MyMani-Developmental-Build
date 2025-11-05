@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   CURRENCY: 'mymani_currency',
   EXPENSE_CATEGORIES: 'mymani_expense_categories',
   INCOME_CATEGORIES: 'mymani_income_categories',
+  COLOR_THEME: 'mymani_color_theme',
 } as const;
 
 // Generic storage functions
