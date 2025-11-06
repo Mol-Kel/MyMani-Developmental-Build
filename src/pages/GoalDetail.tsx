@@ -141,11 +141,13 @@ const GoalDetail = () => {
               </p>
             )}
             
-            {goal.isReached && (
-              <p className="text-sm text-success font-medium">
-                🎉 Goal reached! Great job!
-              </p>
-            )}
+            <p className="text-sm font-medium" style={{ color: goal.isReached ? 'hsl(var(--success))' : 'hsl(var(--accent))' }}>
+              {goal.isReached ? "🎉 Goal reached! Great job!" :
+               percentage < 25 ? "💪 You've got this! Keep saving!" :
+               percentage < 50 ? "🌟 Great momentum! Keep it going!" :
+               percentage < 75 ? "🚀 Excellent progress! Almost there!" :
+               "⭐ Final stretch! Victory is near!"}
+            </p>
 
             {goal.targetDate && (
               <p className="text-sm text-muted-foreground">

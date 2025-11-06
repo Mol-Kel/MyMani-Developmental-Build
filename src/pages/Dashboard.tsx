@@ -23,10 +23,13 @@ import { formatCurrency, getGreeting } from '@/lib/formatters';
 import { transactionStorage, budgetStorage, goalStorage, userStorage } from '@/lib/storage';
 import { useTheme } from 'next-themes';
 import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
+import { StreakCounter } from '@/components/StreakCounter';
+import { useColorTheme } from '@/hooks/useColorTheme';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { colorTheme } = useColorTheme();
   const [userName, setUserName] = useState('');
   const [dailySpent, setDailySpent] = useState(0);
   const [balance, setBalance] = useState(0);
@@ -104,6 +107,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <StreakCounter className="hidden md:flex" />
               <Button
                 variant="ghost"
                 size="icon"
@@ -218,7 +222,12 @@ const Dashboard = () => {
             <ProgressBar value={savingsProgress} variant="success" />
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">
-                Keep going! You're making great progress.
+                {savingsProgress === 0 ? "Start saving today!" :
+                 savingsProgress < 25 ? "Every step counts!" :
+                 savingsProgress < 50 ? "You're making progress!" :
+                 savingsProgress < 75 ? "Halfway there, keep it up!" :
+                 savingsProgress < 100 ? "Almost there! Don't stop now!" :
+                 "Amazing! You've reached your goals! 🎉"}
               </span>
               <Button variant="link" onClick={() => navigate('/goals')}>
                 View Goals

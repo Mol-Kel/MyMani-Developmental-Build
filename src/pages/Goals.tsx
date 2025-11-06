@@ -103,15 +103,18 @@ const Goals = () => {
                       showLabel={true}
                     />
                     
+                    <p className="text-sm text-muted-foreground">
+                      {goal.isReached ? "🎉 Goal achieved! Excellent work!" :
+                       percentage < 25 ? "Just getting started!" :
+                       percentage < 50 ? "Making steady progress!" :
+                       percentage < 75 ? "Over halfway there!" :
+                       percentage < 100 ? "So close! Keep pushing!" :
+                       "Amazing achievement!"}
+                    </p>
+                    
                     {goal.targetDate && (
                       <p className="text-sm text-muted-foreground">
                         Target date: {formatDate(goal.targetDate)}
-                      </p>
-                    )}
-                    
-                    {goal.isReached && (
-                      <p className="text-sm text-success font-medium">
-                        🎉 Congratulations! You've reached your goal!
                       </p>
                     )}
                   </CardContent>
