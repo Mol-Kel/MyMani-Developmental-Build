@@ -107,7 +107,14 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <StreakCounter className="hidden md:flex" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-white/20 relative"
+                title="Daily Streak"
+              >
+                <StreakCounter />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

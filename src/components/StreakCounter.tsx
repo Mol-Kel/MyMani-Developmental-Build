@@ -12,15 +12,12 @@ export const StreakCounter = ({ className }: StreakCounterProps) => {
   return (
     <div
       className={cn(
-        'flex items-center gap-2 px-3 py-2 bg-accent/10 rounded-lg border border-accent/20',
+        'flex items-center gap-1 text-primary-foreground',
         className
       )}
     >
-      <Flame className="w-5 h-5 text-accent" />
-      <div className="flex flex-col">
-        <span className="text-xs text-muted-foreground">Streak</span>
-        <span className="text-sm font-bold text-accent">{streak.currentStreak} days</span>
-      </div>
+      <Flame className="w-5 h-5" />
+      <span className="text-sm font-medium">{streak.currentStreak}</span>
     </div>
   );
 };

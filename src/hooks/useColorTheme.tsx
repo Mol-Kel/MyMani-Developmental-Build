@@ -71,18 +71,6 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondary: '20 75% 55%',
     accent: '10 85% 65%',
   },
-  {
-    name: 'Mint',
-    primary: '160 50% 50%',
-    secondary: '155 45% 45%',
-    accent: '165 55% 55%',
-  },
-  {
-    name: 'Lavender',
-    primary: '280 50% 60%',
-    secondary: '275 45% 55%',
-    accent: '285 55% 65%',
-  },
 ];
 
 export interface ColorThemeSettings {
