@@ -19,8 +19,9 @@ export const ProgressBar = ({
   
   const getVariantClasses = () => {
     if (percentage >= 100) return 'bg-destructive';
-    if (percentage >= 85) return 'bg-accent';
-    return 'bg-accent';
+    if (percentage >= 85) return 'bg-warning';
+    if (variant === 'success') return 'bg-gradient-success';
+    return 'bg-gradient-primary';
   };
   
   return (

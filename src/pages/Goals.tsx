@@ -109,17 +109,9 @@ const Goals = () => {
                       </p>
                     )}
                     
-                    {goal.isReached ? (
+                    {goal.isReached && (
                       <p className="text-sm text-success font-medium">
                         🎉 Congratulations! You've reached your goal!
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {percentage === 0 && "Time to make your first deposit! 💰"}
-                        {percentage > 0 && percentage < 25 && "Great start! Keep it up! 💪"}
-                        {percentage >= 25 && percentage < 50 && "Nice progress! You're on track! 🌟"}
-                        {percentage >= 50 && percentage < 75 && "Over halfway! Keep going! 🚀"}
-                        {percentage >= 75 && percentage < 100 && "Almost there! Final push! 🎯"}
                       </p>
                     )}
                   </CardContent>

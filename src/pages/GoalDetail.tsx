@@ -136,18 +136,9 @@ const GoalDetail = () => {
             <ProgressBar value={percentage} variant="success" showLabel={true} />
             
             {!goal.isReached && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrency(remaining)} remaining to reach your goal
-                </p>
-                <p className="text-sm font-medium text-foreground">
-                  {percentage === 0 && "Start your journey! Every deposit counts! 💰"}
-                  {percentage > 0 && percentage < 25 && "You're on your way! Keep depositing! 💪"}
-                  {percentage >= 25 && percentage < 50 && "Strong progress! Stay consistent! 🌟"}
-                  {percentage >= 50 && percentage < 75 && "Over halfway! You're doing great! 🚀"}
-                  {percentage >= 75 && percentage < 100 && "So close! Final stretch! 🎯"}
-                </p>
-              </>
+              <p className="text-sm text-muted-foreground">
+                {formatCurrency(remaining)} remaining to reach your goal
+              </p>
             )}
             
             {goal.isReached && (
