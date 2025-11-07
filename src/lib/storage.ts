@@ -1,4 +1,4 @@
-import { Transaction, Budget, SavingsGoal, Note } from '@/types';
+import { Transaction, Budget, SavingsGoal, Note, BudgetTemplate } from '@/types';
 
 // LocalStorage keys
 const STORAGE_KEYS = {
@@ -79,9 +79,15 @@ export const budgetStorage = {
     storage.set(STORAGE_KEYS.BUDGETS, budgets);
   },
   
-  add: (budget: Budget): void => {
+  add: (budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>): void => {
     const budgets = budgetStorage.getAll();
-    budgets.push(budget);
+    const newBudget: Budget = {
+      ...budget,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    budgets.push(newBudget);
     budgetStorage.save(budgets);
   },
   
@@ -230,5 +236,48 @@ export const categoryStorage = {
   removeIncomeCategory: (category: string): void => {
     const categories = categoryStorage.getIncomeCategories().filter(c => c !== category);
     categoryStorage.setIncomeCategories(categories);
+  },
+};
+
+// Budget Template Storage
+export const budgetTemplateStorage = {
+  getAll: (): BudgetTemplate[] => {
+    return storage.get<BudgetTemplate[]>('budgetTemplates') || [];
+  },
+  
+  save: (templates: BudgetTemplate[]) => {
+    storage.set('budgetTemplates', templates);
+  },
+  
+  add: (template: Omit<BudgetTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const templates = budgetTemplateStorage.getAll();
+    const newTemplate: BudgetTemplate = {
+      ...template,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    templates.push(newTemplate);
+    budgetTemplateStorage.save(templates);
+    return newTemplate;
+  },
+  
+  update: (id: string, updates: Partial<BudgetTemplate>) => {
+    const templates = budgetTemplateStorage.getAll();
+    const index = templates.findIndex(t => t.id === id);
+    if (index !== -1) {
+      templates[index] = {
+        ...templates[index],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      budgetTemplateStorage.save(templates);
+    }
+  },
+  
+  delete: (id: string) => {
+    const templates = budgetTemplateStorage.getAll();
+    const filtered = templates.filter(t => t.id !== id);
+    budgetTemplateStorage.save(filtered);
   },
 };

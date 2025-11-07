@@ -52,6 +52,17 @@ export interface Note {
   updatedAt: string;
 }
 
+export interface BudgetTemplate {
+  id: string;
+  name: string;
+  budgets: {
+    category: string;
+    allocatedAmount: number; // in cents
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const EXPENSE_CATEGORIES = [
   'Food & Dining',
   'Transport',

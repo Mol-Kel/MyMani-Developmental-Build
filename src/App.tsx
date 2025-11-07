@@ -9,6 +9,8 @@ import AddTransaction from "./pages/AddTransaction";
 import Transactions from "./pages/Transactions";
 import Budgets from "./pages/Budgets";
 import AddBudget from "./pages/AddBudget";
+import BudgetTemplates from "./pages/BudgetTemplates";
+import CreateBudgetTemplate from "./pages/CreateBudgetTemplate";
 import Goals from "./pages/Goals";
 import AddGoal from "./pages/AddGoal";
 import GoalDetail from "./pages/GoalDetail";
@@ -35,6 +37,9 @@ const App = () => (
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/add-budget" element={<AddBudget />} />
+            <Route path="/budgets/templates" element={<BudgetTemplates />} />
+            <Route path="/budgets/templates/create" element={<CreateBudgetTemplate />} />
+            <Route path="/budgets/templates/edit/:id" element={<CreateBudgetTemplate />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/add-goal" element={<AddGoal />} />
             <Route path="/goal/:id" element={<GoalDetail />} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Wallet } from 'lucide-react';
+import { ArrowLeft, Plus, Wallet, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -62,14 +62,24 @@ const Budgets = () => {
               </Button>
               <h1 className="text-xl font-bold">Budgets</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/add-budget')}
-              className="text-primary-foreground hover:bg-white/20"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/budgets/templates')}
+                className="text-primary-foreground hover:bg-white/20"
+              >
+                <FileText className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/add-budget')}
+                className="text-primary-foreground hover:bg-white/20"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
