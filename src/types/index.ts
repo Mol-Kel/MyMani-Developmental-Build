@@ -48,6 +48,8 @@ export interface Note {
   content: string;
   date?: string;
   transactionId?: string;
+  isTodo?: boolean;
+  isCompleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
