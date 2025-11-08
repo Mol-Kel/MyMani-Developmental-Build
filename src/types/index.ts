@@ -48,8 +48,11 @@ export interface Note {
   content: string;
   date?: string;
   transactionId?: string;
+  budgetId?: string;
+  goalId?: string;
   isTodo?: boolean;
   isCompleted?: boolean;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, BookOpen, Edit, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, BookOpen, Edit, CheckSquare, Square, Calendar, Link2, Filter, TrendingUp, Target, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { noteStorage } from '@/lib/storage';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { noteStorage, transactionStorage, budgetStorage, goalStorage } from '@/lib/storage';
 import { Note } from '@/types';
 import { formatDate } from '@/lib/formatters';
+import { getUrgencyInfo } from '@/lib/dateHelpers';
 import { toast } from 'sonner';
 
 const Notes = () => {
@@ -20,6 +23,10 @@ const Notes = () => {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [noteContent, setNoteContent] = useState('');
   const [isTodo, setIsTodo] = useState(false);
+  const [dueDate, setDueDate] = useState('');
+  const [linkedType, setLinkedType] = useState<'none' | 'transaction' | 'budget' | 'goal'>('none');
+  const [linkedId, setLinkedId] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'notes' | 'todos' | 'completed' | 'incomplete'>('all');
 
   useEffect(() => {
     loadNotes();
@@ -39,36 +46,64 @@ const Notes = () => {
       return;
     }
 
+    const noteData: Partial<Note> = {
+      content: noteContent.trim(),
+      isTodo,
+      dueDate: isTodo && dueDate ? dueDate : undefined,
+      transactionId: linkedType === 'transaction' ? linkedId : undefined,
+      budgetId: linkedType === 'budget' ? linkedId : undefined,
+      goalId: linkedType === 'goal' ? linkedId : undefined,
+    };
+
     if (editingNote) {
-      noteStorage.update(editingNote.id, { 
-        content: noteContent.trim(),
-        isTodo,
-      });
+      noteStorage.update(editingNote.id, noteData);
       toast.success('Note updated');
     } else {
       const newNote: Note = {
         id: Date.now().toString(),
-        content: noteContent.trim(),
-        isTodo,
+        ...noteData,
         isCompleted: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      };
+      } as Note;
       noteStorage.add(newNote);
       toast.success('Note added');
     }
 
+    handleDialogClose();
+    loadNotes();
+  };
+
+  const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingNote(null);
     setNoteContent('');
     setIsTodo(false);
-    loadNotes();
+    setDueDate('');
+    setLinkedType('none');
+    setLinkedId('');
   };
 
   const handleEdit = (note: Note) => {
     setEditingNote(note);
     setNoteContent(note.content);
     setIsTodo(note.isTodo || false);
+    setDueDate(note.dueDate || '');
+    
+    if (note.transactionId) {
+      setLinkedType('transaction');
+      setLinkedId(note.transactionId);
+    } else if (note.budgetId) {
+      setLinkedType('budget');
+      setLinkedId(note.budgetId);
+    } else if (note.goalId) {
+      setLinkedType('goal');
+      setLinkedId(note.goalId);
+    } else {
+      setLinkedType('none');
+      setLinkedId('');
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -81,9 +116,7 @@ const Notes = () => {
   };
 
   const handleAddNew = () => {
-    setEditingNote(null);
-    setNoteContent('');
-    setIsTodo(false);
+    handleDialogClose();
     setIsDialogOpen(true);
   };
 
@@ -94,6 +127,39 @@ const Notes = () => {
     loadNotes();
     toast.success(note.isCompleted ? 'Todo unchecked' : 'Todo completed');
   };
+
+  const getLinkedItem = (note: Note) => {
+    if (note.transactionId) {
+      const transaction = transactionStorage.getAll().find(t => t.id === note.transactionId);
+      return transaction ? { type: 'transaction', item: transaction } : null;
+    }
+    if (note.budgetId) {
+      const budget = budgetStorage.getAll().find(b => b.id === note.budgetId);
+      return budget ? { type: 'budget', item: budget } : null;
+    }
+    if (note.goalId) {
+      const goal = goalStorage.getAll().find(g => g.id === note.goalId);
+      return goal ? { type: 'goal', item: goal } : null;
+    }
+    return null;
+  };
+
+  const filteredNotes = notes.filter(note => {
+    if (filterType === 'all') return true;
+    if (filterType === 'notes') return !note.isTodo;
+    if (filterType === 'todos') return note.isTodo;
+    if (filterType === 'completed') return note.isTodo && note.isCompleted;
+    if (filterType === 'incomplete') return note.isTodo && !note.isCompleted;
+    return true;
+  });
+
+  const transactions = transactionStorage.getAll();
+  const budgets = budgetStorage.getAll();
+  const goals = goalStorage.getAll();
+
+  const linkedItems = linkedType === 'transaction' ? transactions :
+                      linkedType === 'budget' ? budgets :
+                      linkedType === 'goal' ? goals : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,85 +189,135 @@ const Notes = () => {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {notes.length === 0 ? (
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="todos">Todos</TabsTrigger>
+            <TabsTrigger value="incomplete">Active</TabsTrigger>
+            <TabsTrigger value="completed">Done</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {filteredNotes.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
                 <BookOpen className="w-8 h-8 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">No notes yet</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  {notes.length === 0 ? 'No notes yet' : 'No matching notes'}
+                </h3>
                 <p className="text-muted-foreground mb-4">
-                  Start writing down your thoughts and ideas
+                  {notes.length === 0 
+                    ? 'Start writing down your thoughts and ideas'
+                    : 'Try a different filter'}
                 </p>
-                <Button onClick={handleAddNew}>
-                  <Plus className="w-4 h-4" />
-                  Add Note
-                </Button>
+                {notes.length === 0 && (
+                  <Button onClick={handleAddNew}>
+                    <Plus className="w-4 h-4" />
+                    Add Note
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
         ) : (
           <div className="space-y-4">
-            {notes.map((note) => (
-              <Card key={note.id} className="p-4 hover:shadow-md transition-all">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    {note.isTodo && (
-                      <button
-                        onClick={() => handleToggleComplete(note)}
-                        className="mt-1 shrink-0"
-                      >
-                        {note.isCompleted ? (
-                          <CheckSquare className="w-5 h-5 text-primary" />
-                        ) : (
-                          <Square className="w-5 h-5 text-muted-foreground" />
-                        )}
-                      </button>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(note.createdAt)}
+            {filteredNotes.map((note) => {
+              const linkedItem = getLinkedItem(note);
+              const urgency = note.isTodo ? getUrgencyInfo(note.dueDate) : null;
+              
+              return (
+                <Card key={note.id} className="p-4 hover:shadow-md transition-all">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {note.isTodo && (
+                        <button
+                          onClick={() => handleToggleComplete(note)}
+                          className="mt-1 shrink-0"
+                        >
+                          {note.isCompleted ? (
+                            <CheckSquare className="w-5 h-5 text-primary" />
+                          ) : (
+                            <Square className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </button>
+                      )}
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(note.createdAt)}
+                          </p>
+                          {note.isTodo && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              Todo
+                            </span>
+                          )}
+                          {urgency && urgency.level !== 'none' && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${urgency.bgColor} ${urgency.color} flex items-center gap-1`}>
+                              <Calendar className="w-3 h-3" />
+                              {urgency.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-foreground whitespace-pre-wrap break-words ${note.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                          {note.content}
                         </p>
-                        {note.isTodo && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            Todo
-                          </span>
+                        {linkedItem && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1.5 w-fit">
+                            <Link2 className="w-3.5 h-3.5" />
+                            {linkedItem.type === 'transaction' && (
+                              <>
+                                <DollarSign className="w-3.5 h-3.5" />
+                                <span>Transaction: {(linkedItem.item as any).category}</span>
+                              </>
+                            )}
+                            {linkedItem.type === 'budget' && (
+                              <>
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                <span>Budget: {(linkedItem.item as any).category}</span>
+                              </>
+                            )}
+                            {linkedItem.type === 'goal' && (
+                              <>
+                                <Target className="w-3.5 h-3.5" />
+                                <span>Goal: {(linkedItem.item as any).title}</span>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
-                      <p className={`text-foreground whitespace-pre-wrap break-words ${note.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                        {note.content}
-                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(note)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(note.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(note)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(note.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingNote ? 'Edit Note' : 'New Note'}</DialogTitle>
           </DialogHeader>
@@ -216,16 +332,92 @@ const Notes = () => {
                 Mark as todo
               </Label>
             </div>
+            
             <Textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               placeholder={isTodo ? "What needs to be done?" : "Write your note here..."}
-              className="min-h-[200px]"
+              className="min-h-[120px]"
               autoFocus
             />
+
+            {isTodo && (
+              <div className="space-y-2">
+                <Label htmlFor="due-date" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Due Date (Optional)
+                </Label>
+                <Input
+                  id="due-date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Link2 className="w-4 h-4" />
+                Link to Item (Optional)
+              </Label>
+              <Select value={linkedType} onValueChange={(v: any) => {
+                setLinkedType(v);
+                setLinkedId('');
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select item type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="transaction">Transaction</SelectItem>
+                  <SelectItem value="budget">Budget</SelectItem>
+                  <SelectItem value="goal">Savings Goal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {linkedType !== 'none' && linkedItems.length > 0 && (
+              <div className="space-y-2">
+                <Label>Select {linkedType}</Label>
+                <Select value={linkedId} onValueChange={setLinkedId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Choose a ${linkedType}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {linkedItems.map((item: any) => {
+                      let displayText = '';
+                      if (linkedType === 'transaction') {
+                        const t = item as any;
+                        displayText = `${t.category} - ${formatDate(t.date)}`;
+                      } else if (linkedType === 'budget') {
+                        const b = item as any;
+                        displayText = `${b.category} - ${b.month}`;
+                      } else if (linkedType === 'goal') {
+                        const g = item as any;
+                        displayText = g.title;
+                      }
+                      
+                      return (
+                        <SelectItem key={item.id} value={item.id}>
+                          {displayText}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {linkedType !== 'none' && linkedItems.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No {linkedType}s available to link
+              </p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={handleDialogClose}>
               Cancel
             </Button>
             <Button onClick={handleSave}>
