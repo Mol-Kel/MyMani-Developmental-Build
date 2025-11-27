@@ -1,6 +1,6 @@
 # Financial Application Logic
 
-## Overview
+## Overview 
 This document explains the core financial logic of the application, detailing how transactions flow through the system and interact with budgets, savings goals, categories, and reports.
 
 ---
