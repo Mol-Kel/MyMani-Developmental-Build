@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/c689eb4b-baa8-4c36-8568-d27cc389718c
+**URL**: --
 
 Changes I made via Lovable will be committed automatically to this repo.
 
