@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AddTransaction from "./pages/AddTransaction";
 import Transactions from "./pages/Transactions";
@@ -20,6 +22,8 @@ import Reports from "./pages/Reports";
 import Notes from "./pages/Notes";
 import ManageCategories from "./pages/ManageCategories";
 import ImportStatement from "./pages/ImportStatement";
+import Auth from "./pages/Auth";
+import MigrateData from "./pages/MigrateData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,33 +31,36 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/add-transaction" element={<AddTransaction />} />
-            <Route path="/transactions" element={<Transactions />} />
-            <Route path="/budgets" element={<Budgets />} />
-            <Route path="/add-budget" element={<AddBudget />} />
-            <Route path="/budgets/templates" element={<BudgetTemplates />} />
-            <Route path="/budgets/templates/create" element={<CreateBudgetTemplate />} />
-            <Route path="/budgets/templates/edit/:id" element={<CreateBudgetTemplate />} />
-            <Route path="/goals" element={<Goals />} />
-            <Route path="/add-goal" element={<AddGoal />} />
-            <Route path="/goal/:id" element={<GoalDetail />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/calculator" element={<Calculator />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/manage-categories" element={<ManageCategories />} />
-            <Route path="/import-statement" element={<ImportStatement />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/add-transaction" element={<ProtectedRoute><AddTransaction /></ProtectedRoute>} />
+              <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+              <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+              <Route path="/add-budget" element={<ProtectedRoute><AddBudget /></ProtectedRoute>} />
+              <Route path="/budgets/templates" element={<ProtectedRoute><BudgetTemplates /></ProtectedRoute>} />
+              <Route path="/budgets/templates/create" element={<ProtectedRoute><CreateBudgetTemplate /></ProtectedRoute>} />
+              <Route path="/budgets/templates/edit/:id" element={<ProtectedRoute><CreateBudgetTemplate /></ProtectedRoute>} />
+              <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+              <Route path="/add-goal" element={<ProtectedRoute><AddGoal /></ProtectedRoute>} />
+              <Route path="/goal/:id" element={<ProtectedRoute><GoalDetail /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+              <Route path="/manage-categories" element={<ProtectedRoute><ManageCategories /></ProtectedRoute>} />
+              <Route path="/import-statement" element={<ProtectedRoute><ImportStatement /></ProtectedRoute>} />
+              <Route path="/migrate-data" element={<ProtectedRoute><MigrateData /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
