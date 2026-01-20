@@ -19,65 +19,77 @@ import { DashboardCard } from '@/components/DashboardCard';
 import { CategoryChip } from '@/components/CategoryChip';
 import { StatCard } from '@/components/StatCard';
 import { ProgressBar } from '@/components/ProgressBar';
+import { UserMenu } from '@/components/UserMenu';
 import { formatCurrency, getGreeting } from '@/lib/formatters';
-import { transactionStorage, budgetStorage, goalStorage, userStorage } from '@/lib/storage';
+import { supabaseTransactionStorage, supabaseGoalStorage, supabaseUserStorage } from '@/lib/supabase-storage';
 import { useTheme } from 'next-themes';
 import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
 import { StreakCounter } from '@/components/StreakCounter';
 import { useColorTheme } from '@/hooks/useColorTheme';
+import { useAuth } from '@/hooks/useAuth';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { colorTheme } = useColorTheme();
+  const { profile } = useAuth();
   const [userName, setUserName] = useState('');
   const [dailySpent, setDailySpent] = useState(0);
   const [balance, setBalance] = useState(0);
   const [savingsProgress, setSavingsProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Enable budget alerts
   useBudgetAlerts();
 
   useEffect(() => {
-    // Load user name
-    setUserName(userStorage.getName());
-    
-    // Calculate daily spent
-    const transactions = transactionStorage.getAll();
-    const today = new Date().toDateString();
-    const todayTransactions = transactions.filter(t => 
-      new Date(t.date).toDateString() === today
-    );
-    
-    const spent = todayTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const income = todayTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    setDailySpent(spent);
-    
-    // Calculate total balance
-    const totalIncome = transactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const totalExpenses = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    setBalance(totalIncome - totalExpenses);
-    
-    // Calculate savings progress
-    const goals = goalStorage.getAll();
-    if (goals.length > 0) {
-      const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
-      const totalCurrent = goals.reduce((sum, g) => sum + g.currentAmount, 0);
-      setSavingsProgress(totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0);
+    loadData();
+  }, [profile]);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load user name from profile
+      setUserName(profile?.full_name || 'there');
+      
+      // Calculate daily spent
+      const transactions = await supabaseTransactionStorage.getAll();
+      const today = new Date().toDateString();
+      const todayTransactions = transactions.filter(t => 
+        new Date(t.date).toDateString() === today
+      );
+      
+      const spent = todayTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      setDailySpent(spent);
+      
+      // Calculate total balance
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const totalExpenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      setBalance(totalIncome - totalExpenses);
+      
+      // Calculate savings progress
+      const goals = await supabaseGoalStorage.getAll();
+      if (goals.length > 0) {
+        const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
+        const totalCurrent = goals.reduce((sum, g) => sum + g.currentAmount, 0);
+        setSavingsProgress(totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
   const handleAddExpense = () => {
     navigate('/add-transaction?type=expense');
@@ -139,6 +151,7 @@ const Dashboard = () => {
               >
                 <Settings className="w-5 h-5" />
               </Button>
+              <UserMenu />
             </div>
           </div>
         </div>

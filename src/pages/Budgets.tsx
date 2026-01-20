@@ -4,38 +4,46 @@ import { ArrowLeft, Plus, Wallet, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ProgressBar';
-import { budgetStorage, transactionStorage } from '@/lib/storage';
+import { UserMenu } from '@/components/UserMenu';
+import { supabaseBudgetStorage, supabaseTransactionStorage } from '@/lib/supabase-storage';
 import { Budget } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 
 const Budgets = () => {
   const navigate = useNavigate();
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadBudgets();
   }, []);
 
-  const loadBudgets = () => {
-    const allBudgets = budgetStorage.getAll();
-    
-    // Update spent amounts
-    const transactions = transactionStorage.getAll();
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    
-    const updatedBudgets = allBudgets.map(budget => {
-      const spent = transactions
-        .filter(t => 
-          t.type === 'expense' &&
-          t.category === budget.category &&
-          t.date.startsWith(budget.month)
-        )
-        .reduce((sum, t) => sum + t.amount, 0);
+  const loadBudgets = async () => {
+    try {
+      setIsLoading(true);
+      const allBudgets = await supabaseBudgetStorage.getAll();
       
-      return { ...budget, spentAmount: spent };
-    });
-    
-    setBudgets(updatedBudgets);
+      // Update spent amounts
+      const transactions = await supabaseTransactionStorage.getAll();
+      
+      const updatedBudgets = allBudgets.map(budget => {
+        const spent = transactions
+          .filter(t => 
+            t.type === 'expense' &&
+            t.category === budget.category &&
+            t.date.startsWith(budget.month)
+          )
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        return { ...budget, spentAmount: spent };
+      });
+      
+      setBudgets(updatedBudgets);
+    } catch (error) {
+      console.error('Error loading budgets:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getWarningLevel = (spent: number, allocated: number): 'safe' | 'warning' | 'danger' => {
@@ -79,13 +87,18 @@ const Budgets = () => {
               >
                 <Plus className="w-5 h-5" />
               </Button>
+              <UserMenu />
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {budgets.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : budgets.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
