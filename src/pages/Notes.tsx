@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, BookOpen, Edit, CheckSquare, Square, Calendar, Link2, Filter, TrendingUp, Target, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, BookOpen, Edit, CheckSquare, Square, Calendar, Link2, TrendingUp, Target, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,8 +10,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { noteStorage, transactionStorage, budgetStorage, goalStorage } from '@/lib/storage';
-import { Note } from '@/types';
+import { UserMenu } from '@/components/UserMenu';
+import { supabaseNoteStorage, supabaseTransactionStorage, supabaseBudgetStorage, supabaseGoalStorage } from '@/lib/supabase-storage';
+import { Note, Transaction, Budget, SavingsGoal } from '@/types';
 import { formatDate } from '@/lib/formatters';
 import { getUrgencyInfo } from '@/lib/dateHelpers';
 import { toast } from 'sonner';
@@ -27,51 +28,71 @@ const Notes = () => {
   const [linkedType, setLinkedType] = useState<'none' | 'transaction' | 'budget' | 'goal'>('none');
   const [linkedId, setLinkedId] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'notes' | 'todos' | 'completed' | 'incomplete'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [goals, setGoals] = useState<SavingsGoal[]>([]);
 
   useEffect(() => {
-    loadNotes();
+    loadData();
   }, []);
 
-  const loadNotes = () => {
-    const allNotes = noteStorage.getAll();
-    const sorted = allNotes.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-    setNotes(sorted);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [allNotes, allTransactions, allBudgets, allGoals] = await Promise.all([
+        supabaseNoteStorage.getAll(),
+        supabaseTransactionStorage.getAll(),
+        supabaseBudgetStorage.getAll(),
+        supabaseGoalStorage.getAll(),
+      ]);
+      
+      const sorted = allNotes.sort((a, b) => 
+        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+      );
+      setNotes(sorted);
+      setTransactions(allTransactions);
+      setBudgets(allBudgets);
+      setGoals(allGoals);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+      toast.error('Failed to load notes');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!noteContent.trim()) {
       toast.error('Please enter some content');
       return;
     }
 
-    const noteData: Partial<Note> = {
-      content: noteContent.trim(),
-      isTodo,
-      dueDate: isTodo && dueDate ? dueDate : undefined,
-      transactionId: linkedType === 'transaction' ? linkedId : undefined,
-      budgetId: linkedType === 'budget' ? linkedId : undefined,
-      goalId: linkedType === 'goal' ? linkedId : undefined,
-    };
+    try {
+      const noteData = {
+        content: noteContent.trim(),
+        isTodo,
+        isCompleted: editingNote?.isCompleted || false,
+        dueDate: isTodo && dueDate ? dueDate : undefined,
+        transactionId: linkedType === 'transaction' ? linkedId : undefined,
+        budgetId: linkedType === 'budget' ? linkedId : undefined,
+        goalId: linkedType === 'goal' ? linkedId : undefined,
+      };
 
-    if (editingNote) {
-      noteStorage.update(editingNote.id, noteData);
-      toast.success('Note updated');
-    } else {
-      const newNote: Note = {
-        id: Date.now().toString(),
-        ...noteData,
-        isCompleted: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as Note;
-      noteStorage.add(newNote);
-      toast.success('Note added');
+      if (editingNote) {
+        await supabaseNoteStorage.update(editingNote.id, noteData);
+        toast.success('Note updated');
+      } else {
+        await supabaseNoteStorage.add(noteData);
+        toast.success('Note added');
+      }
+
+      handleDialogClose();
+      await loadData();
+    } catch (error) {
+      console.error('Error saving note:', error);
+      toast.error('Failed to save note');
     }
-
-    handleDialogClose();
-    loadNotes();
   };
 
   const handleDialogClose = () => {
@@ -107,11 +128,16 @@ const Notes = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this note?')) {
-      noteStorage.delete(id);
-      loadNotes();
-      toast.success('Note deleted');
+      try {
+        await supabaseNoteStorage.delete(id);
+        await loadData();
+        toast.success('Note deleted');
+      } catch (error) {
+        console.error('Error deleting note:', error);
+        toast.error('Failed to delete note');
+      }
     }
   };
 
@@ -120,25 +146,30 @@ const Notes = () => {
     setIsDialogOpen(true);
   };
 
-  const handleToggleComplete = (note: Note) => {
-    noteStorage.update(note.id, {
-      isCompleted: !note.isCompleted,
-    });
-    loadNotes();
-    toast.success(note.isCompleted ? 'Todo unchecked' : 'Todo completed');
+  const handleToggleComplete = async (note: Note) => {
+    try {
+      await supabaseNoteStorage.update(note.id, {
+        isCompleted: !note.isCompleted,
+      });
+      await loadData();
+      toast.success(note.isCompleted ? 'Todo unchecked' : 'Todo completed');
+    } catch (error) {
+      console.error('Error toggling note:', error);
+      toast.error('Failed to update note');
+    }
   };
 
   const getLinkedItem = (note: Note) => {
     if (note.transactionId) {
-      const transaction = transactionStorage.getAll().find(t => t.id === note.transactionId);
+      const transaction = transactions.find(t => t.id === note.transactionId);
       return transaction ? { type: 'transaction', item: transaction } : null;
     }
     if (note.budgetId) {
-      const budget = budgetStorage.getAll().find(b => b.id === note.budgetId);
+      const budget = budgets.find(b => b.id === note.budgetId);
       return budget ? { type: 'budget', item: budget } : null;
     }
     if (note.goalId) {
-      const goal = goalStorage.getAll().find(g => g.id === note.goalId);
+      const goal = goals.find(g => g.id === note.goalId);
       return goal ? { type: 'goal', item: goal } : null;
     }
     return null;
@@ -152,10 +183,6 @@ const Notes = () => {
     if (filterType === 'incomplete') return note.isTodo && !note.isCompleted;
     return true;
   });
-
-  const transactions = transactionStorage.getAll();
-  const budgets = budgetStorage.getAll();
-  const goals = goalStorage.getAll();
 
   const linkedItems = linkedType === 'transaction' ? transactions :
                       linkedType === 'budget' ? budgets :
@@ -177,20 +204,23 @@ const Notes = () => {
               </Button>
               <h1 className="text-xl font-bold">Notes</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleAddNew}
-              className="text-primary-foreground hover:bg-white/20"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleAddNew}
+                className="text-primary-foreground hover:bg-white/20"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+              <UserMenu />
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">
-        <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)} className="w-full">
+        <Tabs value={filterType} onValueChange={(v) => setFilterType(v as typeof filterType)} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -200,7 +230,11 @@ const Notes = () => {
           </TabsList>
         </Tabs>
 
-        {filteredNotes.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredNotes.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
@@ -249,7 +283,7 @@ const Notes = () => {
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(note.createdAt)}
+                            {formatDate(note.createdAt!)}
                           </p>
                           {note.isTodo && (
                             <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
@@ -272,19 +306,19 @@ const Notes = () => {
                             {linkedItem.type === 'transaction' && (
                               <>
                                 <DollarSign className="w-3.5 h-3.5" />
-                                <span>Transaction: {(linkedItem.item as any).category}</span>
+                                <span>Transaction: {(linkedItem.item as Transaction).category}</span>
                               </>
                             )}
                             {linkedItem.type === 'budget' && (
                               <>
                                 <TrendingUp className="w-3.5 h-3.5" />
-                                <span>Budget: {(linkedItem.item as any).category}</span>
+                                <span>Budget: {(linkedItem.item as Budget).category}</span>
                               </>
                             )}
                             {linkedItem.type === 'goal' && (
                               <>
                                 <Target className="w-3.5 h-3.5" />
-                                <span>Goal: {(linkedItem.item as any).title}</span>
+                                <span>Goal: {(linkedItem.item as SavingsGoal).title}</span>
                               </>
                             )}
                           </div>
@@ -362,7 +396,7 @@ const Notes = () => {
                 <Link2 className="w-4 h-4" />
                 Link to Item (Optional)
               </Label>
-              <Select value={linkedType} onValueChange={(v: any) => {
+              <Select value={linkedType} onValueChange={(v: typeof linkedType) => {
                 setLinkedType(v);
                 setLinkedId('');
               }}>
@@ -386,16 +420,16 @@ const Notes = () => {
                     <SelectValue placeholder={`Choose a ${linkedType}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {linkedItems.map((item: any) => {
+                    {linkedItems.map((item) => {
                       let displayText = '';
                       if (linkedType === 'transaction') {
-                        const t = item as any;
+                        const t = item as Transaction;
                         displayText = `${t.category} - ${formatDate(t.date)}`;
                       } else if (linkedType === 'budget') {
-                        const b = item as any;
+                        const b = item as Budget;
                         displayText = `${b.category} - ${b.month}`;
                       } else if (linkedType === 'goal') {
-                        const g = item as any;
+                        const g = item as SavingsGoal;
                         displayText = g.title;
                       }
                       

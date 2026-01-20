@@ -4,21 +4,30 @@ import { ArrowLeft, Plus, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ProgressBar';
-import { goalStorage } from '@/lib/storage';
+import { UserMenu } from '@/components/UserMenu';
+import { supabaseGoalStorage } from '@/lib/supabase-storage';
 import { SavingsGoal } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 
 const Goals = () => {
   const navigate = useNavigate();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadGoals();
   }, []);
 
-  const loadGoals = () => {
-    const allGoals = goalStorage.getAll();
-    setGoals(allGoals);
+  const loadGoals = async () => {
+    try {
+      setIsLoading(true);
+      const allGoals = await supabaseGoalStorage.getAll();
+      setGoals(allGoals);
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,20 +46,27 @@ const Goals = () => {
               </Button>
               <h1 className="text-xl font-bold">Savings Goals</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/add-goal')}
-              className="text-success-foreground hover:bg-white/20"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/add-goal')}
+                className="text-success-foreground hover:bg-white/20"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+              <UserMenu />
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {goals.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : goals.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
@@ -76,7 +92,7 @@ const Goals = () => {
               return (
                 <Card 
                   key={goal.id} 
-                  className="shadow-md hover:shadow-lg transition-all duration-300"
+                  className="shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
                   onClick={() => navigate(`/goal/${goal.id}`)}
                 >
                   <CardHeader>

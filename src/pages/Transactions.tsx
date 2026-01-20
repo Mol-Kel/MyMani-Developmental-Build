@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { transactionStorage } from '@/lib/storage';
+import { UserMenu } from '@/components/UserMenu';
+import { supabaseTransactionStorage } from '@/lib/supabase-storage';
 import { Transaction } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { toast } from 'sonner';
@@ -15,25 +16,39 @@ const Transactions = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadTransactions();
   }, []);
 
-  const loadTransactions = () => {
-    const allTransactions = transactionStorage.getAll();
-    // Sort by date, most recent first
-    const sorted = allTransactions.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    setTransactions(sorted);
+  const loadTransactions = async () => {
+    try {
+      setIsLoading(true);
+      const allTransactions = await supabaseTransactionStorage.getAll();
+      // Sort by date, most recent first
+      const sorted = allTransactions.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      setTransactions(sorted);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+      toast.error('Failed to load transactions');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this transaction?')) {
-      transactionStorage.delete(id);
-      loadTransactions();
-      toast.success('Transaction deleted');
+      try {
+        await supabaseTransactionStorage.delete(id);
+        await loadTransactions();
+        toast.success('Transaction deleted');
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        toast.error('Failed to delete transaction');
+      }
     }
   };
 
@@ -81,13 +96,18 @@ const Transactions = () => {
               >
                 <Plus className="w-5 h-5" />
               </Button>
+              <UserMenu />
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {transactions.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : transactions.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
