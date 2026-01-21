@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { transactionStorage, userStorage } from '@/lib/storage';
+import { supabaseTransactionStorage } from '@/lib/supabase-storage';
+import { useAuth } from '@/hooks/useAuth';
 import { parseCSVStatement, parsePDFStatement, convertToTransactions, ParsedTransaction } from '@/lib/statementParser';
 import { formatCurrency } from '@/lib/formatters';
 import { toast } from 'sonner';
 
 const ImportStatement = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [parsedTransactions, setParsedTransactions] = useState<ParsedTransaction[]>([]);
   const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -79,15 +82,24 @@ const ImportStatement = () => {
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const selectedTxns = parsedTransactions.filter((_, i) => selectedTransactions.has(i));
-    const currency = userStorage.getCurrency();
+    const currency = profile?.currency || 'ZAR';
     const transactions = convertToTransactions(selectedTxns, currency);
     
-    transactions.forEach(txn => transactionStorage.add(txn));
-    
-    toast.success(`Imported ${transactions.length} transactions`);
-    navigate('/transactions');
+    setIsImporting(true);
+    try {
+      for (const txn of transactions) {
+        await supabaseTransactionStorage.add(txn);
+      }
+      toast.success(`Imported ${transactions.length} transactions`);
+      navigate('/transactions');
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Failed to import transactions');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (
@@ -141,7 +153,7 @@ const ImportStatement = () => {
 
             {isProcessing && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Processing file...
               </div>
             )}
@@ -199,10 +211,14 @@ const ImportStatement = () => {
                 </div>
                 <Button
                   onClick={handleImport}
-                  disabled={selectedTransactions.size === 0}
+                  disabled={selectedTransactions.size === 0 || isImporting}
                   className="gap-2"
                 >
-                  <Check className="w-4 h-4" />
+                  {isImporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
                   Import {selectedTransactions.size} Transaction{selectedTransactions.size !== 1 ? 's' : ''}
                 </Button>
               </div>

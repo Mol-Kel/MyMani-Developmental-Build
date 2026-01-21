@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { budgetTemplateStorage, categoryStorage, userStorage } from '@/lib/storage';
+import { supabaseBudgetTemplateStorage, supabaseCategoryStorage } from '@/lib/supabase-storage';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import type { BudgetTemplate } from '@/types';
 
 export default function CreateBudgetTemplate() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { profile } = useAuth();
   const isEditing = !!id;
 
   const [templateName, setTemplateName] = useState('');
@@ -20,23 +21,37 @@ export default function CreateBudgetTemplate() {
     { category: '', amount: '' }
   ]);
   const [categories, setCategories] = useState<string[]>([]);
-  const currency = userStorage.getCurrency();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const currency = profile?.currency || 'ZAR';
 
   useEffect(() => {
-    const expenseCategories = categoryStorage.getExpenseCategories();
-    setCategories(expenseCategories);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const expenseCategories = await supabaseCategoryStorage.getCategories('expense');
+        setCategories(expenseCategories);
 
-    if (isEditing) {
-      const templates = budgetTemplateStorage.getAll();
-      const template = templates.find(t => t.id === id);
-      if (template) {
-        setTemplateName(template.name);
-        setBudgets(template.budgets.map(b => ({
-          category: b.category,
-          amount: (b.allocatedAmount / 100).toString()
-        })));
+        if (isEditing) {
+          const templates = await supabaseBudgetTemplateStorage.getAll();
+          const template = templates.find(t => t.id === id);
+          if (template) {
+            setTemplateName(template.name);
+            setBudgets(template.budgets.map(b => ({
+              category: b.category,
+              amount: b.allocatedAmount.toString()
+            })));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        toast.error('Failed to load data');
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    loadData();
   }, [id, isEditing]);
 
   const handleAddBudget = () => {
@@ -55,7 +70,7 @@ export default function CreateBudgetTemplate() {
     setBudgets(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!templateName.trim()) {
@@ -70,24 +85,40 @@ export default function CreateBudgetTemplate() {
       return;
     }
 
-    const templateData = {
-      name: templateName,
-      budgets: validBudgets.map(b => ({
-        category: b.category,
-        allocatedAmount: Math.round(parseFloat(b.amount) * 100)
-      }))
-    };
+    setIsSaving(true);
+    try {
+      const templateData = {
+        name: templateName,
+        budgets: validBudgets.map(b => ({
+          category: b.category,
+          allocatedAmount: parseFloat(b.amount)
+        }))
+      };
 
-    if (isEditing) {
-      budgetTemplateStorage.update(id, templateData);
-      toast.success('Template updated');
-    } else {
-      budgetTemplateStorage.add(templateData);
-      toast.success('Template created');
+      if (isEditing && id) {
+        await supabaseBudgetTemplateStorage.update(id, templateData);
+        toast.success('Template updated');
+      } else {
+        await supabaseBudgetTemplateStorage.add(templateData);
+        toast.success('Template created');
+      }
+
+      navigate('/budgets/templates');
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      toast.error('Failed to save template');
+    } finally {
+      setIsSaving(false);
     }
-
-    navigate('/budgets/templates');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -171,7 +202,7 @@ export default function CreateBudgetTemplate() {
                         placeholder="0.00"
                         value={budget.amount}
                         onChange={(e) => handleBudgetChange(index, 'amount', e.target.value)}
-                        className="pl-8"
+                        className="pl-12"
                       />
                     </div>
                   </div>
@@ -198,7 +229,8 @@ export default function CreateBudgetTemplate() {
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={isSaving}>
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isEditing ? 'Update Template' : 'Create Template'}
             </Button>
           </div>
