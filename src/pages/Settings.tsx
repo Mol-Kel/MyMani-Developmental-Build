@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun, BookOpen, Tag, Download, Bell } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, BookOpen, Tag, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,37 +8,51 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { userStorage, transactionStorage, budgetStorage, goalStorage } from '@/lib/storage';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { exportTransactionsToCSV, exportBudgetsToCSV, exportGoalsToCSV, exportAllData } from '@/lib/export';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 import { getAlertSettings, setAlertSettings } from '@/hooks/useBudgetAlerts';
 import { ColorCustomizer } from '@/components/ColorCustomizer';
+import { useAuth } from '@/hooks/useAuth';
+import { supabaseTransactionStorage, supabaseBudgetStorage, supabaseGoalStorage } from '@/lib/supabase-storage';
+import type { Transaction, Budget, SavingsGoal } from '@/types';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { profile, updateProfile } = useAuth();
   const [userName, setUserName] = useState('');
   const [currency, setCurrency] = useState('ZAR');
   const [alertSettings, setAlertSettingsState] = useState(getAlertSettings());
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    setUserName(userStorage.getName());
-    setCurrency(userStorage.getCurrency());
-  }, []);
+    if (profile) {
+      setUserName(profile.full_name || '');
+      setCurrency(profile.currency || 'ZAR');
+    }
+  }, [profile]);
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     if (userName.trim()) {
-      userStorage.setName(userName.trim());
-      toast.success('Name updated successfully');
+      try {
+        await updateProfile({ full_name: userName.trim() });
+        toast.success('Name updated successfully');
+      } catch (error) {
+        toast.error('Failed to update name');
+      }
     }
   };
 
-  const handleCurrencyChange = (value: string) => {
+  const handleCurrencyChange = async (value: string) => {
     setCurrency(value);
-    userStorage.setCurrency(value);
-    toast.success('Currency updated successfully');
+    try {
+      await updateProfile({ currency: value });
+      toast.success('Currency updated successfully');
+    } catch (error) {
+      toast.error('Failed to update currency');
+    }
   };
 
   const handleAlertToggle = (enabled: boolean) => {
@@ -66,48 +80,78 @@ const Settings = () => {
     setAlertSettings(newSettings);
   };
 
-  const handleExportTransactions = () => {
-    const transactions = transactionStorage.getAll();
-    if (transactions.length === 0) {
-      toast.error('No transactions to export');
-      return;
+  const handleExportTransactions = async () => {
+    setIsExporting(true);
+    try {
+      const transactions = await supabaseTransactionStorage.getAll();
+      if (transactions.length === 0) {
+        toast.error('No transactions to export');
+        return;
+      }
+      exportTransactionsToCSV(transactions);
+      toast.success('Transactions exported successfully');
+    } catch (error) {
+      toast.error('Failed to export transactions');
+    } finally {
+      setIsExporting(false);
     }
-    exportTransactionsToCSV(transactions);
-    toast.success('Transactions exported successfully');
   };
 
-  const handleExportBudgets = () => {
-    const budgets = budgetStorage.getAll();
-    if (budgets.length === 0) {
-      toast.error('No budgets to export');
-      return;
+  const handleExportBudgets = async () => {
+    setIsExporting(true);
+    try {
+      const budgets = await supabaseBudgetStorage.getAll();
+      if (budgets.length === 0) {
+        toast.error('No budgets to export');
+        return;
+      }
+      exportBudgetsToCSV(budgets);
+      toast.success('Budgets exported successfully');
+    } catch (error) {
+      toast.error('Failed to export budgets');
+    } finally {
+      setIsExporting(false);
     }
-    exportBudgetsToCSV(budgets);
-    toast.success('Budgets exported successfully');
   };
 
-  const handleExportGoals = () => {
-    const goals = goalStorage.getAll();
-    if (goals.length === 0) {
-      toast.error('No goals to export');
-      return;
+  const handleExportGoals = async () => {
+    setIsExporting(true);
+    try {
+      const goals = await supabaseGoalStorage.getAll();
+      if (goals.length === 0) {
+        toast.error('No goals to export');
+        return;
+      }
+      exportGoalsToCSV(goals);
+      toast.success('Goals exported successfully');
+    } catch (error) {
+      toast.error('Failed to export goals');
+    } finally {
+      setIsExporting(false);
     }
-    exportGoalsToCSV(goals);
-    toast.success('Goals exported successfully');
   };
 
-  const handleExportAll = () => {
-    const transactions = transactionStorage.getAll();
-    const budgets = budgetStorage.getAll();
-    const goals = goalStorage.getAll();
-    
-    if (transactions.length === 0 && budgets.length === 0 && goals.length === 0) {
-      toast.error('No data to export');
-      return;
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      const [transactions, budgets, goals] = await Promise.all([
+        supabaseTransactionStorage.getAll(),
+        supabaseBudgetStorage.getAll(),
+        supabaseGoalStorage.getAll(),
+      ]);
+      
+      if (transactions.length === 0 && budgets.length === 0 && goals.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+      
+      exportAllData(transactions, budgets, goals);
+      toast.success('All data exported successfully');
+    } catch (error) {
+      toast.error('Failed to export data');
+    } finally {
+      setIsExporting(false);
     }
-    
-    exportAllData(transactions, budgets, goals);
-    toast.success('All data exported successfully');
   };
 
   return (
@@ -292,6 +336,7 @@ const Settings = () => {
               variant="outline"
               className="w-full justify-start"
               onClick={handleExportTransactions}
+              disabled={isExporting}
             >
               <Download className="w-4 h-4 mr-2" />
               Export Transactions (CSV)
@@ -300,6 +345,7 @@ const Settings = () => {
               variant="outline"
               className="w-full justify-start"
               onClick={handleExportBudgets}
+              disabled={isExporting}
             >
               <Download className="w-4 h-4 mr-2" />
               Export Budgets (CSV)
@@ -308,6 +354,7 @@ const Settings = () => {
               variant="outline"
               className="w-full justify-start"
               onClick={handleExportGoals}
+              disabled={isExporting}
             >
               <Download className="w-4 h-4 mr-2" />
               Export Goals (CSV)
@@ -316,6 +363,7 @@ const Settings = () => {
               variant="outline"
               className="w-full justify-start"
               onClick={handleExportAll}
+              disabled={isExporting}
             >
               <Download className="w-4 h-4 mr-2" />
               Export All Data (JSON)
@@ -335,7 +383,7 @@ const Settings = () => {
               Version 1.0.0
             </p>
             <p className="text-sm text-muted-foreground">
-              All data is stored locally on your device
+              Your data is securely stored in the cloud
             </p>
           </CardContent>
         </Card>

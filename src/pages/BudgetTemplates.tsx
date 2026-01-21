@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { budgetTemplateStorage, budgetStorage } from '@/lib/storage';
+import { supabaseBudgetTemplateStorage, supabaseBudgetStorage } from '@/lib/supabase-storage';
 import { formatCurrency } from '@/lib/formatters';
 import type { BudgetTemplate } from '@/types';
 import { toast } from 'sonner';
@@ -31,9 +31,11 @@ import { Label } from '@/components/ui/label';
 export default function BudgetTemplates() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<BudgetTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [applyTemplate, setApplyTemplate] = useState<BudgetTemplate | null>(null);
   const [targetMonth, setTargetMonth] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -42,53 +44,80 @@ export default function BudgetTemplates() {
     setTargetMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   }, []);
 
-  const loadTemplates = () => {
-    const allTemplates = budgetTemplateStorage.getAll();
-    setTemplates(allTemplates);
-  };
-
-  const handleDelete = () => {
-    if (deleteId) {
-      budgetTemplateStorage.delete(deleteId);
-      loadTemplates();
-      toast.success('Template deleted');
-      setDeleteId(null);
+  const loadTemplates = async () => {
+    try {
+      setIsLoading(true);
+      const allTemplates = await supabaseBudgetTemplateStorage.getAll();
+      setTemplates(allTemplates);
+    } catch (error) {
+      console.error('Failed to load templates:', error);
+      toast.error('Failed to load templates');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleApplyTemplate = () => {
+  const handleDelete = async () => {
+    if (deleteId) {
+      try {
+        await supabaseBudgetTemplateStorage.delete(deleteId);
+        await loadTemplates();
+        toast.success('Template deleted');
+      } catch (error) {
+        toast.error('Failed to delete template');
+      } finally {
+        setDeleteId(null);
+      }
+    }
+  };
+
+  const handleApplyTemplate = async () => {
     if (!applyTemplate || !targetMonth) return;
 
-    const existingBudgets = budgetStorage.getAll();
-    let created = 0;
-    let skipped = 0;
+    setIsApplying(true);
+    try {
+      const existingBudgets = await supabaseBudgetStorage.getAll();
+      let created = 0;
+      let skipped = 0;
 
-    applyTemplate.budgets.forEach(templateBudget => {
-      const exists = existingBudgets.some(
-        b => b.category === templateBudget.category && b.month === targetMonth
-      );
+      for (const templateBudget of applyTemplate.budgets) {
+        const exists = existingBudgets.some(
+          b => b.category === templateBudget.category && b.month === targetMonth
+        );
 
-      if (!exists) {
-        budgetStorage.add({
-          category: templateBudget.category,
-          allocatedAmount: templateBudget.allocatedAmount,
-          spentAmount: 0,
-          month: targetMonth,
-        });
-        created++;
-      } else {
-        skipped++;
+        if (!exists) {
+          await supabaseBudgetStorage.add({
+            category: templateBudget.category,
+            allocatedAmount: templateBudget.allocatedAmount,
+            month: targetMonth,
+          });
+          created++;
+        } else {
+          skipped++;
+        }
       }
-    });
 
-    toast.success(`Applied template: ${created} budgets created${skipped > 0 ? `, ${skipped} skipped (already exist)` : ''}`);
-    setApplyTemplate(null);
-    navigate('/budgets');
+      toast.success(`Applied template: ${created} budgets created${skipped > 0 ? `, ${skipped} skipped (already exist)` : ''}`);
+      setApplyTemplate(null);
+      navigate('/budgets');
+    } catch (error) {
+      toast.error('Failed to apply template');
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const getTotalAmount = (template: BudgetTemplate) => {
     return template.budgets.reduce((sum, b) => sum + b.allocatedAmount, 0);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -213,7 +242,8 @@ export default function BudgetTemplates() {
             <Button variant="outline" onClick={() => setApplyTemplate(null)}>
               Cancel
             </Button>
-            <Button onClick={handleApplyTemplate}>
+            <Button onClick={handleApplyTemplate} disabled={isApplying}>
+              {isApplying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Apply Template
             </Button>
           </DialogFooter>

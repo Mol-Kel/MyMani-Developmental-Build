@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Tag } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Tag, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { categoryStorage } from '@/lib/storage';
+import { supabaseCategoryStorage } from '@/lib/supabase-storage';
 import { toast } from 'sonner';
 
 const ManageCategories = () => {
@@ -15,17 +14,30 @@ const ManageCategories = () => {
   const [incomeCategories, setIncomeCategories] = useState<string[]>([]);
   const [newExpenseCategory, setNewExpenseCategory] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadCategories();
   }, []);
 
-  const loadCategories = () => {
-    setExpenseCategories(categoryStorage.getExpenseCategories());
-    setIncomeCategories(categoryStorage.getIncomeCategories());
+  const loadCategories = async () => {
+    try {
+      setIsLoading(true);
+      const [expense, income] = await Promise.all([
+        supabaseCategoryStorage.getCategories('expense'),
+        supabaseCategoryStorage.getCategories('income'),
+      ]);
+      setExpenseCategories(expense);
+      setIncomeCategories(income);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      toast.error('Failed to load categories');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddExpenseCategory = () => {
+  const handleAddExpenseCategory = async () => {
     if (!newExpenseCategory.trim()) {
       toast.error('Please enter a category name');
       return;
@@ -36,13 +48,17 @@ const ManageCategories = () => {
       return;
     }
 
-    categoryStorage.addExpenseCategory(newExpenseCategory.trim());
-    setNewExpenseCategory('');
-    loadCategories();
-    toast.success('Category added');
+    try {
+      await supabaseCategoryStorage.addCategory('expense', newExpenseCategory.trim());
+      setNewExpenseCategory('');
+      await loadCategories();
+      toast.success('Category added');
+    } catch (error) {
+      toast.error('Failed to add category');
+    }
   };
 
-  const handleAddIncomeCategory = () => {
+  const handleAddIncomeCategory = async () => {
     if (!newIncomeCategory.trim()) {
       toast.error('Please enter a category name');
       return;
@@ -53,27 +69,47 @@ const ManageCategories = () => {
       return;
     }
 
-    categoryStorage.addIncomeCategory(newIncomeCategory.trim());
-    setNewIncomeCategory('');
-    loadCategories();
-    toast.success('Category added');
-  };
-
-  const handleDeleteExpenseCategory = (category: string) => {
-    if (confirm(`Delete "${category}" category? This won't affect existing transactions.`)) {
-      categoryStorage.removeExpenseCategory(category);
-      loadCategories();
-      toast.success('Category deleted');
+    try {
+      await supabaseCategoryStorage.addCategory('income', newIncomeCategory.trim());
+      setNewIncomeCategory('');
+      await loadCategories();
+      toast.success('Category added');
+    } catch (error) {
+      toast.error('Failed to add category');
     }
   };
 
-  const handleDeleteIncomeCategory = (category: string) => {
+  const handleDeleteExpenseCategory = async (category: string) => {
     if (confirm(`Delete "${category}" category? This won't affect existing transactions.`)) {
-      categoryStorage.removeIncomeCategory(category);
-      loadCategories();
-      toast.success('Category deleted');
+      try {
+        await supabaseCategoryStorage.removeCategory('expense', category);
+        await loadCategories();
+        toast.success('Category deleted');
+      } catch (error) {
+        toast.error('Failed to delete category');
+      }
     }
   };
+
+  const handleDeleteIncomeCategory = async (category: string) => {
+    if (confirm(`Delete "${category}" category? This won't affect existing transactions.`)) {
+      try {
+        await supabaseCategoryStorage.removeCategory('income', category);
+        await loadCategories();
+        toast.success('Category deleted');
+      } catch (error) {
+        toast.error('Failed to delete category');
+      }
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
