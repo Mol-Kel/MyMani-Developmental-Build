@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardCard } from '@/components/DashboardCard';
 import { UserMenu } from '@/components/UserMenu';
+import { ReportsSkeleton } from '@/components/skeletons';
 import { supabaseTransactionStorage } from '@/lib/supabase-storage';
 import { Transaction } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
@@ -127,9 +128,7 @@ const Reports = () => {
         </Card>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+          <ReportsSkeleton />
         ) : (
           <>
             {/* Summary */}

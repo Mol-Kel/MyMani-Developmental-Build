@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserMenu } from '@/components/UserMenu';
+import { NoteCardSkeleton } from '@/components/skeletons';
 import { supabaseNoteStorage, supabaseTransactionStorage, supabaseBudgetStorage, supabaseGoalStorage } from '@/lib/supabase-storage';
 import { Note, Transaction, Budget, SavingsGoal } from '@/types';
 import { formatDate } from '@/lib/formatters';
@@ -231,9 +232,7 @@ const Notes = () => {
         </Tabs>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+          <NoteCardSkeleton count={4} />
         ) : filteredNotes.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">

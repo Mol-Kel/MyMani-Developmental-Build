@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ProgressBar';
 import { UserMenu } from '@/components/UserMenu';
+import { BudgetCardSkeleton } from '@/components/skeletons';
 import { supabaseBudgetStorage, supabaseTransactionStorage } from '@/lib/supabase-storage';
 import { Budget } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
@@ -95,9 +96,7 @@ const Budgets = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+          <BudgetCardSkeleton count={3} />
         ) : budgets.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
