@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { UserMenu } from '@/components/UserMenu';
+import { TransactionListSkeleton } from '@/components/skeletons';
 import { supabaseTransactionStorage } from '@/lib/supabase-storage';
 import { Transaction } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/formatters';
@@ -104,9 +105,7 @@ const Transactions = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+          <TransactionListSkeleton count={6} />
         ) : transactions.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">

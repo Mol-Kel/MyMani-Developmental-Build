@@ -20,6 +20,7 @@ import { CategoryChip } from '@/components/CategoryChip';
 import { StatCard } from '@/components/StatCard';
 import { ProgressBar } from '@/components/ProgressBar';
 import { UserMenu } from '@/components/UserMenu';
+import { DashboardSkeleton } from '@/components/skeletons';
 import { formatCurrency, getGreeting } from '@/lib/formatters';
 import { supabaseTransactionStorage, supabaseGoalStorage, supabaseUserStorage } from '@/lib/supabase-storage';
 import { useTheme } from 'next-themes';
@@ -158,13 +159,17 @@ const Dashboard = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Greeting */}
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-foreground">
-            {getGreeting()}, {userName}!
-          </h2>
-          <p className="text-muted-foreground">How are you doing today?</p>
-        </div>
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            {/* Greeting */}
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">
+                {getGreeting()}, {userName}!
+              </h2>
+              <p className="text-muted-foreground">How are you doing today?</p>
+            </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,7 +295,9 @@ const Dashboard = () => {
             <TrendingUp className="w-8 h-8 text-accent" />
             <span>Reports</span>
           </Button>
-        </div>
+          </div>
+          </>
+        )}
       </main>
     </div>
   );
